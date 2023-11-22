@@ -1,0 +1,95 @@
+Sub ProcessData()
+    Dim destinationWorkbook As Workbook
+    Dim outputWorksheet As Worksheet, odWorksheet As Worksheet
+    Dim lastRowOutput As Long, lastRowOD As Long
+
+    ' Step 1: Ask user to select destination workbook
+    Set destinationWorkbook = Application.GetOpenFilename(FileFilter:="Excel Workbook (*.xls; *.xlsx), *.xls; *.xlsx", Title:="Select Destination Workbook", MultiSelect:=False)
+
+    If destinationWorkbook Is Nothing Then
+        MsgBox "No workbook selected. Exiting macro."
+        Exit Sub
+    End If
+
+    ' Step 2: Activate "output" worksheet in destination workbook
+    Set outputWorksheet = destinationWorkbook.Sheets("output")
+    outputWorksheet.Activate
+
+    ' Step 3: Remove filter in "output" worksheet
+    outputWorksheet.AutoFilterMode = False
+
+    ' Step 4: Clear data for column A to J till the last row, starting from row 2
+    lastRowOutput = outputWorksheet.Cells(outputWorksheet.Rows.Count, "A").End(xlUp).Row
+    If lastRowOutput > 1 Then
+        outputWorksheet.Range("A2:J" & lastRowOutput).ClearContents
+    End If
+
+    ' Step 5: Clear data for column N to W till the last row, starting from row 2
+    outputWorksheet.Range("N2:W" & lastRowOutput).ClearContents
+
+    ' Step 6: Activate "OD" worksheet in destination workbook
+    Set odWorksheet = destinationWorkbook.Sheets("OD")
+    odWorksheet.Activate
+
+    ' Step 7: Remove filter in "OD" worksheet
+    odWorksheet.AutoFilterMode = False
+
+    ' Step 8: Insert a column at the beginning (column A) and apply formula to concatenate values in column B & C till the last row
+    odWorksheet.Columns("A:A").Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+    lastRowOD = odWorksheet.Cells(odWorksheet.Rows.Count, "B").End(xlUp).Row
+    odWorksheet.Range("A2:A" & lastRowOD).Formula = "=B2&C2"
+
+    ' Step 9: Clear content in cell for column AH if there are repeating Project numbers in column AE
+    Dim cell As Range
+    Dim dict As Object
+    Set dict = CreateObject("Scripting.Dictionary")
+
+    For Each cell In odWorksheet.Range("AE2:AE" & lastRowOD)
+        If Not dict.Exists(cell.Value) Then
+            dict(cell.Value) = cell.Row
+        Else
+            odWorksheet.Cells(cell.Row, "AH").ClearContents
+        End If
+    Next cell
+
+    ' Step 10: Sort the data in "OD" worksheet in descending order with respect to column AH (sales, highest to lowest)
+    odWorksheet.Sort.SortFields.Clear
+    odWorksheet.Sort.SortFields.Add Key:=odWorksheet.Range("AH2:AH" & lastRowOD), SortOn:=xlSortOnValues, Order:=xlDescending, DataOption:=xlSortNormal
+    With odWorksheet.Sort
+        .SetRange odWorksheet.Range("A1:AH" & lastRowOD)
+        .Header = xlYes
+        .MatchCase = False
+        .Apply
+    End With
+
+    ' Step 11: Copy top 6 keys from column A
+    odWorksheet.Range("A2:A7").Copy
+
+    ' Step 12: Special Paste as values in "output" worksheet at cell A2
+    outputWorksheet.Range("A2").PasteSpecial Paste:=xlPasteValues
+
+    ' Step 13: Activate "OD" worksheet again
+    odWorksheet.Activate
+
+    ' Step 14: Insert a column at the end and apply formula "=today()-vlookup(K2,'cockpit'!A:AE,31,0)" till the last row
+    odWorksheet.Columns("X:X").Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+    lastRowOD = odWorksheet.Cells(odWorksheet.Rows.Count, "A").End(xlUp).Row
+    odWorksheet.Range("X2:X" & lastRowOD).Formula = "=TODAY()-VLOOKUP(K2,'cockpit'!A:AE,31,0)"
+
+    ' Step 15: Sort the data with respect to this new column in descending order
+    odWorksheet.Sort.SortFields.Clear
+    odWorksheet.Sort.SortFields.Add Key:=odWorksheet.Range("X2:X" & lastRowOD), SortOn:=xlSortOnValues, Order:=xlDescending, DataOption:=xlSortNormal
+    With odWorksheet.Sort
+        .SetRange odWorksheet.Range("A1:X" & lastRowOD)
+        .Header = xlYes
+        .MatchCase = False
+        .Apply
+    End With
+
+    ' Step 16: Copy top 6 keys and paste it in "OD" worksheet at cell N2
+    odWorksheet.Range("A2:N7").Copy
+    outputWorksheet.Range("N2").PasteSpecial Paste:=xlPasteValues
+
+    ' Clear clipboard
+    Application.CutCopyMode = False
+End Sub
