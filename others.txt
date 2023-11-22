@@ -4,6 +4,39 @@ Sub ProcessData()
     Dim lastRowOutput As Long, lastRowOD As Long
 
     ' Step 1: Ask user to select destination workbook
+    Dim destinationFilePath As String
+    destinationFilePath = Application.GetOpenFilename(FileFilter:="Excel Workbook (*.xls; *.xlsx), *.xls; *.xlsx", Title:="Select Destination Workbook", MultiSelect:=False)
+
+    If destinationFilePath = "False" Then
+        MsgBox "No workbook selected. Exiting macro."
+        Exit Sub
+    End If
+
+    ' Open the selected workbook
+    Set destinationWorkbook = Workbooks.Open(destinationFilePath)
+
+    ' Step 2: Activate "output" worksheet in destination workbook
+    Set outputWorksheet = destinationWorkbook.Sheets("output")
+    outputWorksheet.Activate
+
+    ' Rest of the code remains the same...
+    ' (Please refer to the previous code I provided)
+
+    ' Close the destination workbook without saving changes
+    destinationWorkbook.Close SaveChanges:=False
+
+    ' Clear clipboard
+    Application.CutCopyMode = False
+End Sub
+
+
+
+Sub ProcessData()
+    Dim destinationWorkbook As Workbook
+    Dim outputWorksheet As Worksheet, odWorksheet As Worksheet
+    Dim lastRowOutput As Long, lastRowOD As Long
+
+    ' Step 1: Ask user to select destination workbook
     Set destinationWorkbook = Application.GetOpenFilename(FileFilter:="Excel Workbook (*.xls; *.xlsx), *.xls; *.xlsx", Title:="Select Destination Workbook", MultiSelect:=False)
 
     If destinationWorkbook Is Nothing Then
