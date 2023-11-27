@@ -1,14 +1,49 @@
-Sub FillDownFormula()
+Sub CopyNotesFromOldVersion()
+    Dim outputWorksheet As Worksheet
+    Dim oldVersionWorkbook As Workbook
+    Dim keyColumn As Range
     Dim lastRow As Long
     
-    ' Find the last row with data in column A
-    lastRow = Cells(Rows.Count, 1).End(xlUp).Row
+    ' Check if destination worksheet is already opened
+    On Error Resume Next
+    Set outputWorksheet = Worksheets("output")
+    On Error GoTo 0
     
-    ' Check if there is data in column A
-    If lastRow > 1 Then
-        ' Replace "A2" with the cell reference where your formula starts
-        Range("A2").AutoFill Destination:=Range("A2:A" & lastRow), Type:=xlFillDefault
-    Else
-        MsgBox "No data found in column A", vbExclamation
+    If outputWorksheet Is Nothing Then
+        ' Ask user to select and open old version of destination workbook
+        Dim oldVersionPath As String
+        oldVersionPath = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx")
+        
+        If oldVersionPath = "False" Then
+            MsgBox "Operation canceled by user."
+            Exit Sub
+        End If
+        
+        ' Open old version workbook
+        Set oldVersionWorkbook = Workbooks.Open(oldVersionPath)
+        
+        ' Set outputWorksheet to the "output" tab in the old version workbook
+        Set outputWorksheet = oldVersionWorkbook.Sheets("output")
     End If
+    
+    ' Activate "output" tab and remove filter if any
+    outputWorksheet.Activate
+    outputWorksheet.AutoFilterMode = False
+    
+    ' Activate "output" tab in the current workbook
+    ThisWorkbook.Sheets("output").Activate
+    
+    ' Apply VLOOKUP formula in column H to copy previous notes from 2nd file based on key column A
+    With outputWorksheet
+        lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+        Set keyColumn = .Range("A2:A" & lastRow)
+        .Range("H2:H" & lastRow).Formula = "=VLOOKUP(A2, '" & ThisWorkbook.Name & "'!A:H, 8, FALSE)"
+    End With
+    
+    ' Close old version workbook if it was opened in this process
+    If Not oldVersionWorkbook Is Nothing Then
+        oldVersionWorkbook.Close SaveChanges:=False
+    End If
+    
+    MsgBox "VLOOKUP formula applied successfully!"
 End Sub
