@@ -1,49 +1,59 @@
-Sub CopyNotesFromOldVersion()
-    Dim outputWorksheet As Worksheet
-    Dim oldVersionWorkbook As Workbook
-    Dim keyColumn As Range
-    Dim lastRow As Long
+Sub CopyDataToDestinationWorkbook()
+    Dim destFile As Variant
+    Dim sourceFile As Variant
+    Dim destWorkbook As Workbook
+    Dim sourceWorkbook As Workbook
     
-    ' Check if destination worksheet is already opened
-    On Error Resume Next
-    Set outputWorksheet = Worksheets("output")
-    On Error GoTo 0
+    ' Step 1: Ask user to select destination file
+    destFile = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx")
     
-    If outputWorksheet Is Nothing Then
-        ' Ask user to select and open old version of destination workbook
-        Dim oldVersionPath As String
-        oldVersionPath = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx")
-        
-        If oldVersionPath = "False" Then
-            MsgBox "Operation canceled by user."
-            Exit Sub
-        End If
-        
-        ' Open old version workbook
-        Set oldVersionWorkbook = Workbooks.Open(oldVersionPath)
-        
-        ' Set outputWorksheet to the "output" tab in the old version workbook
-        Set outputWorksheet = oldVersionWorkbook.Sheets("output")
-    End If
+    ' Check if the user canceled the file selection
+    If destFile = "False" Then Exit Sub
     
-    ' Activate "output" tab and remove filter if any
-    outputWorksheet.Activate
-    outputWorksheet.AutoFilterMode = False
+    ' Open destination workbook
+    Set destWorkbook = Workbooks.Open(destFile)
     
-    ' Activate "output" tab in the current workbook
-    ThisWorkbook.Sheets("output").Activate
-    
-    ' Apply VLOOKUP formula in column H to copy previous notes from 2nd file based on key column A
-    With outputWorksheet
-        lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
-        Set keyColumn = .Range("A2:A" & lastRow)
-        .Range("H2:H" & lastRow).Formula = "=VLOOKUP(A2, '" & ThisWorkbook.Name & "'!A:H, 8, FALSE)"
+    ' Step 2: Activate "QMI (sere)" tab, remove filters, and unhide columns
+    With destWorkbook.Sheets("QMI (sere)")
+        .Activate
+        .AutoFilterMode = False
+        .Columns.Hidden = False
     End With
     
-    ' Close old version workbook if it was opened in this process
-    If Not oldVersionWorkbook Is Nothing Then
-        oldVersionWorkbook.Close SaveChanges:=False
+    ' Step 3: Clear data from column A to DF till the last row
+    With destWorkbook.Sheets("QMI (sere)").Columns("A:DF")
+        .ClearContents
+    End With
+    
+    ' Step 4: Ask user to select QMI workbook
+    sourceFile = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx")
+    
+    ' Check if the user canceled the file selection
+    If sourceFile = "False" Then
+        destWorkbook.Close SaveChanges:=False
+        Exit Sub
     End If
     
-    MsgBox "VLOOKUP formula applied successfully!"
+    ' Open QMI workbook
+    Set sourceWorkbook = Workbooks.Open(sourceFile)
+    
+    ' Step 5: Activate first sheet, remove filter if there is any
+    With sourceWorkbook.Sheets(1)
+        .Activate
+        .AutoFilterMode = False
+    End With
+    
+    ' Step 6: Select data from column A to DF and copy it
+    With sourceWorkbook.Sheets(1).Columns("A:DF")
+        .Copy
+    End With
+    
+    ' Step 7: Paste data in destination file "QMI (sere)" tab at cell A1, paste values only
+    destWorkbook.Sheets("QMI (sere)").Range("A1").PasteSpecial Paste:=xlPasteValues
+    
+    ' Close source workbook without saving changes
+    sourceWorkbook.Close SaveChanges:=False
+    
+    ' Close destination workbook and save changes
+    destWorkbook.Close SaveChanges:=True
 End Sub
