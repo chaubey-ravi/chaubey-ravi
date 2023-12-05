@@ -1,3 +1,6 @@
+sourceWorksheet.Columns(col).Copy Destination:=destCol.Resize(destWorksheet.Rows.Count, 1)
+
+
 Sub CopyODDataToDestinationWorkbook()
     Dim destFile As Variant
     Dim sourceFile As Variant
