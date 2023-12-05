@@ -1,4 +1,18 @@
 ' Copy and paste values
+Dim destColumn As Variant
+For Each destColumn In destColumns
+    Dim destCol As Range
+    Set destCol = destWorksheet.Rows(1).Find(destColumn, LookIn:=xlValues, LookAt:=xlWhole)
+
+    If Not destCol Is Nothing Then
+        ' Copy and paste values
+        destCol.Offset(, 1).Resize(destWorksheet.Rows.Count, 1).Value = sourceWorksheet.Columns(destColumn).Value
+    End If
+Next destColumn
+
+
+
+' Copy and paste values
 
 ' Copy and paste values
 sourceWorksheet.Columns(col).Copy
