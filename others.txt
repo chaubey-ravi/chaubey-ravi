@@ -1,8 +1,12 @@
-Sub CopyDataToDestinationWorkbook()
+Sub CopyODDataToDestinationWorkbook()
     Dim destFile As Variant
     Dim sourceFile As Variant
     Dim destWorkbook As Workbook
     Dim sourceWorkbook As Workbook
+    Dim destWorksheet As Worksheet
+    Dim sourceWorksheet As Worksheet
+    Dim destColumns As Collection
+    Dim col As Variant
     
     ' Step 1: Ask user to select destination file
     destFile = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx")
@@ -13,19 +17,24 @@ Sub CopyDataToDestinationWorkbook()
     ' Open destination workbook
     Set destWorkbook = Workbooks.Open(destFile)
     
-    ' Step 2: Activate "QMI (sere)" tab, remove filters, and unhide columns
-    With destWorkbook.Sheets("QMI (sere)")
+    ' Step 2: Activate "OD Tableau" worksheet, unhide columns, and remove filters
+    Set destWorksheet = destWorkbook.Sheets("OD Tableau")
+    With destWorksheet
         .Activate
         .AutoFilterMode = False
         .Columns.Hidden = False
     End With
     
-    ' Step 3: Clear data from column A to DF till the last row
-    With destWorkbook.Sheets("QMI (sere)").Columns("A:DF")
-        .ClearContents
-    End With
+    ' Step 3: Store name of columns in a collection
+    Set destColumns = New Collection
+    For Each col In destWorksheet.Range("B1:AM1").Value
+        destColumns.Add col
+    Next col
     
-    ' Step 4: Ask user to select QMI workbook
+    ' Step 4: Clear data from column B to AM
+    destWorksheet.Range("B:AM").ClearContents
+    
+    ' Step 5: Ask user to select OD Source file
     sourceFile = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx")
     
     ' Check if the user canceled the file selection
@@ -34,22 +43,27 @@ Sub CopyDataToDestinationWorkbook()
         Exit Sub
     End If
     
-    ' Open QMI workbook
+    ' Open OD Source workbook
     Set sourceWorkbook = Workbooks.Open(sourceFile)
     
-    ' Step 5: Activate first sheet, remove filter if there is any
-    With sourceWorkbook.Sheets(1)
+    ' Step 6: Activate first tab, remove filter if there is any
+    Set sourceWorksheet = sourceWorkbook.Sheets(1)
+    With sourceWorksheet
         .Activate
         .AutoFilterMode = False
     End With
     
-    ' Step 6: Select data from column A to DF and copy it
-    With sourceWorkbook.Sheets(1).Columns("A:DF")
-        .Copy
-    End With
-    
-    ' Step 7: Paste data in destination file "QMI (sere)" tab at cell A1, paste values only
-    destWorkbook.Sheets("QMI (sere)").Range("A1").PasteSpecial Paste:=xlPasteValues
+    ' Step 7: Copy and paste values to destination worksheet
+    For Each col In destColumns
+        Dim destCol As Range
+        Set destCol = destWorksheet.Rows(1).Find(col, LookIn:=xlValues, LookAt:=xlWhole)
+        
+        If Not destCol Is Nothing Then
+            ' Copy and paste values
+            .Columns(col).Copy
+            destCol.Resize(.Rows.Count, 1).PasteSpecial Paste:=xlPasteValues
+        End If
+    Next col
     
     ' Close source workbook without saving changes
     sourceWorkbook.Close SaveChanges:=False
