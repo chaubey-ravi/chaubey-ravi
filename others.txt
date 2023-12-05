@@ -1,4 +1,11 @@
 ' Copy and paste values
+
+' Copy and paste values
+sourceWorksheet.Columns(col).Copy
+destCol.Offset(, 1).Resize(destWorksheet.Rows.Count, 1).PasteSpecial Paste:=xlPasteValues
+Application.CutCopyMode = False ' Clear the clipboard
+
+
 destCol.Resize(destWorksheet.Rows.Count, 1).Value = sourceWorksheet.Columns(col).Value
 
 sourceWorksheet.Columns(col).Copy Destination:=destCol.Resize(destWorksheet.Rows.Count, 1)
