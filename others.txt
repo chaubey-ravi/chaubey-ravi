@@ -1,3 +1,6 @@
+' Copy and paste values
+destCol.Resize(destWorksheet.Rows.Count, 1).Value = sourceWorksheet.Columns(col).Value
+
 sourceWorksheet.Columns(col).Copy Destination:=destCol.Resize(destWorksheet.Rows.Count, 1)
 
 
