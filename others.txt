@@ -1,100 +1,67 @@
-' Copy and paste values
-Dim destColumn As Variant
-For Each destColumn In destColumns
-    Dim destCol As Range
-    Set destCol = destWorksheet.Rows(1).Find(destColumn, LookIn:=xlValues, LookAt:=xlWhole)
-
-    If Not destCol Is Nothing Then
-        ' Copy and paste values
-        destCol.Offset(, 1).Resize(destWorksheet.Rows.Count, 1).Value = sourceWorksheet.Columns(destColumn).Value
-    End If
-Next destColumn
-
-
-
-' Copy and paste values
-
-' Copy and paste values
-sourceWorksheet.Columns(col).Copy
-destCol.Offset(, 1).Resize(destWorksheet.Rows.Count, 1).PasteSpecial Paste:=xlPasteValues
-Application.CutCopyMode = False ' Clear the clipboard
-
-
-destCol.Resize(destWorksheet.Rows.Count, 1).Value = sourceWorksheet.Columns(col).Value
-
-sourceWorksheet.Columns(col).Copy Destination:=destCol.Resize(destWorksheet.Rows.Count, 1)
-
-
-Sub CopyODDataToDestinationWorkbook()
-    Dim destFile As Variant
-    Dim sourceFile As Variant
-    Dim destWorkbook As Workbook
-    Dim sourceWorkbook As Workbook
+Sub CopyDataToDestinationWorkbook()
     Dim destWorksheet As Worksheet
-    Dim sourceWorksheet As Worksheet
-    Dim destColumns As Collection
-    Dim col As Variant
+    Dim sourceFile As Variant
+    Dim sourceWorkbook As Workbook
+    Dim destLastRow As Long
     
-    ' Step 1: Ask user to select destination file
-    destFile = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx")
-    
-    ' Check if the user canceled the file selection
-    If destFile = "False" Then Exit Sub
-    
-    ' Open destination workbook
-    Set destWorkbook = Workbooks.Open(destFile)
-    
-    ' Step 2: Activate "OD Tableau" worksheet, unhide columns, and remove filters
-    Set destWorksheet = destWorkbook.Sheets("OD Tableau")
+    ' Step 2: Activate "OD by Site" tab, remove filter, unhide columns
+    Set destWorksheet = destWorkbook.Sheets("OD by Site")
     With destWorksheet
         .Activate
         .AutoFilterMode = False
         .Columns.Hidden = False
     End With
     
-    ' Step 3: Store name of columns in a collection
-    Set destColumns = New Collection
-    For Each col In destWorksheet.Range("B1:AM1").Value
-        destColumns.Add col
-    Next col
+    ' Step 3: Clear data in columns A, B to L, M to N
+    With destWorksheet
+        ' Clear data in column A from row 3 to the last row
+        .Range("A3:A" & .Cells(.Rows.Count, "A").End(xlUp).Row).ClearContents
+        
+        ' Clear data from column B to L starting from row 2 to the last row
+        .Range("B2:L" & .Cells(.Rows.Count, "B").End(xlUp).Row).ClearContents
+        
+        ' Clear data from column M to N from row 3 to the last row
+        .Range("M3:N" & .Cells(.Rows.Count, "M").End(xlUp).Row).ClearContents
+    End With
     
-    ' Step 4: Clear data from column B to AM
-    destWorksheet.Range("B:AM").ClearContents
-    
-    ' Step 5: Ask user to select OD Source file
+    ' Step 4: Ask user to select source file
     sourceFile = Application.GetOpenFilename("Excel Files (*.xls; *.xlsx), *.xls; *.xlsx")
     
     ' Check if the user canceled the file selection
-    If sourceFile = "False" Then
-        destWorkbook.Close SaveChanges:=False
-        Exit Sub
-    End If
+    If sourceFile = "False" Then Exit Sub
     
-    ' Open OD Source workbook
+    ' Open source workbook
     Set sourceWorkbook = Workbooks.Open(sourceFile)
     
-    ' Step 6: Activate first tab, remove filter if there is any
-    Set sourceWorksheet = sourceWorkbook.Sheets(1)
-    With sourceWorksheet
+    ' Step 8: Activate first worksheet, remove filter if there is any
+    With sourceWorkbook.Sheets(1)
         .Activate
         .AutoFilterMode = False
     End With
     
-    ' Step 7: Copy and paste values to destination worksheet
-    For Each col In destColumns
-        Dim destCol As Range
-        Set destCol = destWorksheet.Rows(1).Find(col, LookIn:=xlValues, LookAt:=xlWhole)
-        
-        If Not destCol Is Nothing Then
-            ' Copy and paste values
-            .Columns(col).Copy
-            destCol.Resize(.Rows.Count, 1).PasteSpecial Paste:=xlPasteValues
-        End If
-    Next col
+    ' Step 9: Copy data from source file and paste only values to destination file
+    destLastRow = destWorksheet.Cells(destWorksheet.Rows.Count, "A").End(xlUp).Row
+    
+    ' Copy and paste data one by one
+    destWorksheet.Range("B2:B" & destLastRow).Value = sourceWorkbook.Columns("K").Value
+    destWorksheet.Range("C2:C" & destLastRow).Value = sourceWorkbook.Columns("R").Value
+    destWorksheet.Range("D2:D" & destLastRow).Value = sourceWorkbook.Columns("AD").Value
+    destWorksheet.Range("E2:E" & destLastRow).Value = sourceWorkbook.Columns("GL").Value
+    destWorksheet.Range("F2:F" & destLastRow).Value = sourceWorkbook.Columns("AF").Value
+    destWorksheet.Range("G2:G" & destLastRow).Value = sourceWorkbook.Columns("AG").Value
+    destWorksheet.Range("H2:H" & destLastRow).Value = sourceWorkbook.Columns("FH").Value
+    destWorksheet.Range("I2:I" & destLastRow).Value = sourceWorkbook.Columns("CS").Value
+    destWorksheet.Range("J2:J" & destLastRow).Value = sourceWorkbook.Columns("EP").Value
+    destWorksheet.Range("K2:K" & destLastRow).Value = sourceWorkbook.Columns("EQ").Value
+    destWorksheet.Range("L2:L" & destLastRow).Value = sourceWorkbook.Columns("FR").Value
+    
+    ' Step 10: Fill down formula till the last row for column A, M, and N
+    With destWorksheet
+        .Range("A3:A" & destLastRow).Formula = .Range("A2").Formula
+        .Range("M3:M" & destLastRow).Formula = .Range("M2").Formula
+        .Range("N3:N" & destLastRow).Formula = .Range("N2").Formula
+    End With
     
     ' Close source workbook without saving changes
     sourceWorkbook.Close SaveChanges:=False
-    
-    ' Close destination workbook and save changes
-    destWorkbook.Close SaveChanges:=True
 End Sub
